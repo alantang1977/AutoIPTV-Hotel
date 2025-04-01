@@ -13,12 +13,20 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-    
+        uses: actions/checkout@v3
+      
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.x
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: pip install selenium requests futures eventlet
@@ -26,13 +34,11 @@ jobs:
       - name: Run iptv
         run: python ${{ github.workspace }}/iptv.py
 
-        
       - name: 提交
         run: |
+          set -e
           git config --local user.email "ssili@126.com"
           git config --local user.name "ssili126"
-          git add .
-          git commit *.txt -m "Add generated file"
-          git commit *.m3u -m "Add generated file"
-          #git pull --rebase
-          git push -f
+          git add *.txt *.m3u
+          git commit -m "Add generated files"
+          git push
