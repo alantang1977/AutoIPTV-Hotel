@@ -1,7 +1,7 @@
 name: update-lives-list
 
 on:
-  schedule:
+    schedule:
     - cron: '0 21 * * *'
   push:
     branches:
@@ -26,6 +26,8 @@ jobs:
       - name: Run iptv
         run: python ${{ github.workspace }}/iptv.py
 
+        
+  schedule
         
       - name: 提交
         run: |
