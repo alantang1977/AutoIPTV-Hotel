@@ -1,4 +1,4 @@
-name: Update IPTV Code
+name: Update IPTV
 
 on:
   # 每天凌晨 2 点执行工作流
