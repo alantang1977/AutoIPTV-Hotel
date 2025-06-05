@@ -1,18 +1,9 @@
-import time
 import concurrent.futures
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import requests
 from bs4 import BeautifulSoup
-import re
-import os
-import threading
-from queue import Queue
-import eventlet
 
-# Monkey patching for eventlet
-eventlet.monkey_patch()
 
+# 定义 URL 列表
 urls = [
     "https://fofa.info/result?qbase64=ImlwdHYvbGl2ZS96aF9jbi5qcyIgJiYgY291bnRyeT0iQ04iICYmIHJlZ2lvbj0iSGViZWki",  # Hebei (河北)
     "https://fofa.info/result?qbase64=ImlwdHYvbGl2ZS96aF9jbi5qcyIgJiYgY291bnRyeT0iQ04iICYmIHJlZ2lvbj0iYmVpamluZyI%3D",  # Beijing (北京)
@@ -193,10 +184,10 @@ urls = [
     "https://fofa.info/result?qbase64=ImlwdHYvbGl2ZS96aF9jbi5qcyIgJiYgY291bnRyeT0iQ04iICYmIHJlZ2lvbj0iR3Vhbmd4aSBaaHVhbmd6dSI%3D",  # 广西
 ]
 
-
+# 获取 URL 内容
 def get_url_content(url):
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             return response.text
         else:
@@ -206,19 +197,19 @@ def get_url_content(url):
         print(f"Error getting content from {url}: {e}")
         return None
 
+# 提取直播源 URL
 def extract_live_urls(content):
     live_urls = []
     if content:
         soup = BeautifulSoup(content, 'html.parser')
-        # 假设直播源信息存储在 <a> 标签的 href 属性中
         for a in soup.find_all('a'):
             href = a.get('href')
             if href and 'http' in href:
                 live_urls.append(href)
     return live_urls
 
+# 修改 URL（目前只是简单返回原 URL，可按需修改）
 def modify_urls(url):
-    # 这里可以添加实际的 URL 修改逻辑，目前简单返回原 URL
     return [url]
 
 # 获取所有 URL 的内容并提取直播源
