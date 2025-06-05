@@ -1,40 +1,52 @@
-name: update-lives-list
+name: 自动采集和更新频道
 
 on:
-    schedule:
-     - cron: '55 0 */2 * *' # 每2天凌晨00点55分执行任务，上海时区的UTC时间
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: '0 2 * * *'   # 每天UTC时间2点运行一次，可根据需要调整
+  workflow_dispatch:      # 支持手动触发
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-    
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.x
+    - name: 检出仓库代码
+      uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: pip install selenium requests futures eventlet
+    - name: 设置Python环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Run iptv
-        run: python ${{ github.workspace }}/iptv.py
+    - name: 安装依赖
+      run: |
+        pip install selenium requests eventlet
 
-        
-  schedule
-        
-      - name: 提交
-        run: |
-          git config --local user.email "ssili@126.com"
-          git config --local user.name "ssili126"
-          git add .
-          git commit *.txt -m "Add generated file"
-          git commit *.m3u -m "Add generated file"
-          #git pull --rebase
-          git push -f
+        # 安装Chrome及驱动
+        sudo apt-get update
+        sudo apt-get install -y wget unzip xvfb
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
+        wget -O chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip" || wget -O chromedriver.zip "https://chromedriver.storage.googleapis.com/$(echo $CHROME_VERSION | cut -d '.' -f 1-3)/chromedriver_linux64.zip"
+        unzip chromedriver.zip
+        sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver || sudo mv chromedriver /usr/local/bin/chromedriver
+        sudo chmod +x /usr/local/bin/chromedriver
+
+    - name: 运行采集脚本
+      env:
+        DISPLAY: ":99"
+      run: |
+        Xvfb :99 &  # 后台启动虚拟显示
+        python iptv.py
+
+    - name: 配置 Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: 提交并推送更新
+      run: |
+        git add lives.txt lives.m3u
+        git diff --cached --quiet || git commit -m "自动更新频道列表"
+        git push
